@@ -9,7 +9,7 @@ Target: Xiaomi MiTV-AXFU1, Android TV 14 (API 34). Android customization only.
 - `build.sh` completed; APK signature and manifest verified. Package `io.freemytv`, versionCode 2, versionName `1.1-continue`, min API 28 / target 33, compile API 34. No TMDB key configured.
 - Installed and updated over the previous build with the same permanent signing key. History permission remained granted after update.
 - System permission explanation/dialog displayed on TV. Actual history showed **8 entries: 5 Ivi, 3 Kinopoisk**, with four landscape cards visible, artwork, progress and additional cards reachable horizontally.
-- Light-theme screen inspected. Selected card survived a return from Ivi.
+- Light-theme screen inspected. Selected card survived a return from Ivi. Long OK opened the hide menu; hiding reduced the row from 8 to 7 entries with nearest-card focus. The individual restore action restored the material; the hidden list was then empty. Source settings correctly listed Ivi and Kinopoisk, both enabled.
 - User confirmed that Ivi opened the correct material and resumed from the saved position (Ivi 26.10.2 from the preceding diagnostic).
 - No changes to HomeMode, Watchdog, HomeData, Recs, screensaver implementations, LG or Tizen code. The original Google TV home remained the default during preview.
 
@@ -20,7 +20,7 @@ Kinopoisk 2.270.8 publishes `intent://seasons?...#Intent;scheme=kpatv;end` with 
 ## Not yet accepted
 
 - Fresh playback progress after returning from the real cinema apps: the provider supports reads and observer updates, but the latest diagnostic snapshot had not yet changed its recorded positions. No freshness guarantee is inferred.
-- Full real-TV hide/restore/source-exclusion UI pass, dark theme and enabled TalkBack.
+- Real-TV source-exclusion toggling, restore-all UI, dark theme and enabled TalkBack (filtering/restore-all persistence are covered by code and isolated tests).
 - Final switch to Free My TV, return through Original, and watchdog recovery. Their implementations are preserved, but unchanged code is not evidence of a completed live recovery test.
 - TMDB-configured background/screensaver behavior; this build intentionally has no API key. The existing weather widget remains configured through upstream Home Settings; city defaults were not customized.
 - Zona playback/Watch Next behavior is explicitly outside acceptance.
