@@ -6,6 +6,7 @@ import android.content.ContextWrapper;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.net.Uri;
 import android.os.Bundle;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -138,6 +139,7 @@ public class ContinueAndroidTest extends Instrumentation {
         try { ContinueLaunch.material(base, new ContinueModel.Item("local.uninstalled.source", "id", "title", "", "", "", "", "", "continuetest://film", 0, 1, 100, 1)); }
         catch (Exception expected) { missing = true; }
         check(missing, "uninstalled source rejected");
+        kinopoiskPlayback();
         CountDownLatch loaded = new CountDownLatch(1);
         Bitmap art = Bitmap.createBitmap(1600, 900, Bitmap.Config.ARGB_8888);
         File image = new File(base.getFilesDir(), "fixture.png");
@@ -157,5 +159,30 @@ public class ContinueAndroidTest extends Instrumentation {
         check(new ContinuePrefs(base).hiddenKeys().contains(item("").key), "new store instance retains hide");
         // SharedPreferences.apply() is flushed by ActivityThread before the instrumentation process exits.
         base.getSharedPreferences("continue_watching", 0).edit().putBoolean("testFlush", true).commit();
+    }
+    private void kinopoiskPlayback() throws Exception {
+        // Synthetic IDs only. These checks never launch or write to a cinema app.
+        String pkg = "ru.kinopoisk.tv";
+        Uri original = Intent.parseUri("intent://seasons?filmId=test-film&episodeId=test-episode"
+                + "&utm_source=android%20tv&extra=a%26b#Intent;scheme=kpatv;end", Intent.URI_INTENT_SCHEME).getData();
+        Uri playback = ContinueLaunch.playbackUri(pkg, original);
+        check(playback.toString().equals(original + "&action=play"), "only append the verified playback action");
+        check("test-film".equals(playback.getQueryParameter("filmId"))
+                && "test-episode".equals(playback.getQueryParameter("episodeId")), "retain exact series and episode IDs");
+        check(ContinueLaunch.playbackUri(pkg, playback) == playback, "do not duplicate the action");
+        check(ContinueLaunch.playbackUri("ru.ivi.client", original) == original, "other sources unchanged");
+        check(ContinueLaunch.playbackUri(pkg, null) == null, "component-only intent unchanged");
+        for (String raw : Arrays.asList("kpatv:seasons", "https://seasons?filmId=f&episodeId=e",
+                "kpatv://film?filmId=f&episodeId=e", "kpatv://seasons/other?filmId=f&episodeId=e",
+                "kpatv://seasons?filmId=f", "kpatv://seasons?episodeId=e", "kpatv://seasons?filmId=&episodeId=e",
+                "kpatv://seasons?filmId=f&episodeId=%20", "kpatv://seasons?filmId=f&filmId=g&episodeId=e",
+                "kpatv://seasons?filmId=f&episodeId=e&episodeId=g", "kpatv://seasons?filmId=f&episodeId=e&action=trailer",
+                "kpatv://seasons?filmId=f&episodeId=e&action=")) {
+            Uri uri = Uri.parse(raw);
+            check(ContinueLaunch.playbackUri(pkg, uri) == uri, "leave ambiguous or explicitly directed URI unchanged: " + raw);
+        }
+        Uri fragment = Uri.parse("kpatv://seasons/?filmId=f&episodeId=e#section");
+        check(ContinueLaunch.playbackUri(pkg, fragment).toString().equals(
+                "kpatv://seasons/?filmId=f&episodeId=e&action=play#section"), "query appended before fragment");
     }
 }

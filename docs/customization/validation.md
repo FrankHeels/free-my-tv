@@ -5,8 +5,8 @@ Target: Xiaomi MiTV-AXFU1, Android TV 14 (API 34). Android customization only.
 ## Completed
 
 - Plain Java suite: **29 checks passed**, JDK 17.
-- Isolated Android instrumentation APK on the Xiaomi: **38 checks passed**, then **2 persistence checks passed after force-stop**. The tests used their own in-memory provider and preferences, never system Watch Next writes. The runner removed the test package afterward.
-- `build.sh` completed; APK signature and manifest verified. Package `io.freemytv`, versionCode 2, versionName `1.1-continue`, min API 28 / target 33, compile API 34. No TMDB key configured.
+- Isolated Android instrumentation APK on the Xiaomi: **56 checks passed**, then **2 persistence checks passed after force-stop**. This includes 18 checks for the Kinopoisk playback URI rule. The tests used their own in-memory provider and preferences, never system Watch Next writes or real cinema launches. The runner removed the test package afterward.
+- `build.sh` completed; APK signature and manifest verified. Package `io.freemytv`, versionCode 3, versionName `1.2-continue`, min API 28 / target 33, compile API 34. No TMDB key configured.
 - Installed and updated over the previous build with the same permanent signing key. History permission remained granted after update.
 - System permission explanation/dialog displayed on TV. Actual history showed **8 entries: 5 Ivi, 3 Kinopoisk**, with four landscape cards visible, artwork, progress and additional cards reachable horizontally.
 - Light-theme screen inspected. Selected card survived a return from Ivi. Long OK opened the hide menu; hiding reduced the row from 8 to 7 entries with nearest-card focus. The individual restore action restored the material; the hidden list was then empty. Source settings correctly listed Ivi and Kinopoisk, both enabled.
@@ -16,7 +16,9 @@ Target: Xiaomi MiTV-AXFU1, Android TV 14 (API 34). Android customization only.
 
 ## Kinopoisk result
 
-Kinopoisk 2.270.8 publishes `intent://seasons?...#Intent;scheme=kpatv;end` with `filmId` and `episodeId`. All three observed entries use that route. The launcher forwards the supplied URI and extras to `ru.kinopoisk.tv`. It opens the series' episode chooser and selects the published episode; it does not start playback automatically. The user confirmed that the correct episode is selected. Playback position after pressing OK on that episode is still awaiting confirmation. No unsupported playback/seek parameters were added.
+Kinopoisk 2.270.8 publishes `intent://seasons?...#Intent;scheme=kpatv;end` with `filmId` and `episodeId`. All three observed entries use that route. The unmodified link opens the episode chooser with the correct episode selected, as confirmed by the user.
+
+The installed app's handler explicitly supports `action=play` on that same route and dispatches it to its episode player with the supplied film/episode IDs. A direct device test with the existing episode link plus this action opened the player; the user confirmed both the correct episode and saved playback position without the episode list. Version 1.2 now applies this narrow compatibility rule to Kinopoisk episode links. It preserves explicit actions and incomplete/ambiguous links, never injects a seek position, and leaves other apps unchanged. The updated APK was installed with the same signing key; a subsequent OK on the first Kinopoisk card opened the player directly. This behavior is verified for Kinopoisk 2.270.8 and should be retested after app updates; it is not a public guarantee for future versions.
 
 ## Not yet accepted
 
