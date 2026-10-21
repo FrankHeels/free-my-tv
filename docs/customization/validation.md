@@ -11,11 +11,12 @@ Target: Xiaomi MiTV-AXFU1, Android TV 14 (API 34). Android customization only.
 - System permission explanation/dialog displayed on TV. Actual history showed **8 entries: 5 Ivi, 3 Kinopoisk**, with four landscape cards visible, artwork, progress and additional cards reachable horizontally.
 - Light-theme screen inspected. Selected card survived a return from Ivi. Long OK opened the hide menu; hiding reduced the row from 8 to 7 entries with nearest-card focus. The individual restore action restored the material; the hidden list was then empty. Source settings correctly listed Ivi and Kinopoisk, both enabled.
 - User confirmed that Ivi opened the correct material and resumed from the saved position (Ivi 26.10.2 from the preceding diagnostic).
+- Temporary diagnostic and isolated test APKs were removed from the TV after the checks.
 - No changes to HomeMode, Watchdog, HomeData, Recs, screensaver implementations, LG or Tizen code. The original Google TV home remained the default during preview.
 
 ## Kinopoisk result
 
-Kinopoisk 2.270.8 publishes `intent://seasons?...#Intent;scheme=kpatv;end` with `filmId` and `episodeId`. All three observed entries use that route. The launcher forwards the supplied URI and extras to `ru.kinopoisk.tv`. It opens the series' episode chooser and selects the published episode; it does not start playback automatically. The user observed this behavior. Playback position after pressing OK on that episode is still awaiting confirmation. No unsupported playback/seek parameters were added.
+Kinopoisk 2.270.8 publishes `intent://seasons?...#Intent;scheme=kpatv;end` with `filmId` and `episodeId`. All three observed entries use that route. The launcher forwards the supplied URI and extras to `ru.kinopoisk.tv`. It opens the series' episode chooser and selects the published episode; it does not start playback automatically. The user confirmed that the correct episode is selected. Playback position after pressing OK on that episode is still awaiting confirmation. No unsupported playback/seek parameters were added.
 
 ## Not yet accepted
 
