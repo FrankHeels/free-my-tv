@@ -56,10 +56,15 @@ public class HomeActivity extends Activity {
         super.onPause();
     }
 
-    /** Home button pressed on the home screen: back to the entry state (focus on the first app, sheet closed). */
+    /** Home button pressed on the home screen: close overlays and return to the selected material. */
     @Override protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         if (home != null) home.reset(true);
+    }
+
+    @Override public void onRequestPermissionsResult(int request, String[] permissions, int[] results) {
+        super.onRequestPermissionsResult(request, permissions, results);
+        if (home != null) home.refreshContinue();
     }
 
     @Override protected void onDestroy() {

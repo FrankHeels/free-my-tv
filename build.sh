@@ -115,10 +115,14 @@ esac
 (cd out && zip -qj base.apk classes.dex)
 "$BT/zipalign" -f -p 4 out/base.apk out/aligned.apk
 
-# --- Sign with your own key (created once; updates need the same key, so keep freemytv.keystore)
-if [ ! -f freemytv.keystore ]; then
-  "$KEYTOOL" -genkeypair -keystore freemytv.keystore -alias freemytv -keyalg RSA -keysize 2048 -validity 20000 \
-    -storepass freemytv -keypass freemytv -dname "CN=Free My TV" >/dev/null 2>&1
+# --- Sign. Point FREEMYTV_KEYSTORE outside the checkout for persistent custom builds.
+SIGNING_KEY="${FREEMYTV_KEYSTORE:-freemytv.keystore}"
+SIGNING_PASSWORD="${FREEMYTV_KEYSTORE_PASSWORD:-freemytv}"
+export SIGNING_PASSWORD
+if [ ! -f "$SIGNING_KEY" ]; then
+  umask 077
+  "$KEYTOOL" -genkeypair -keystore "$SIGNING_KEY" -alias freemytv -keyalg RSA -keysize 2048 -validity 20000 \
+    -storepass:env SIGNING_PASSWORD -keypass:env SIGNING_PASSWORD -dname "CN=Free My TV" >/dev/null 2>&1
 fi
-"$BT/apksigner" sign --ks freemytv.keystore --ks-pass pass:freemytv --key-pass pass:freemytv --out FreeMyTV.apk out/aligned.apk
+"$BT/apksigner" sign --ks "$SIGNING_KEY" --ks-pass env:SIGNING_PASSWORD --key-pass env:SIGNING_PASSWORD --out FreeMyTV.apk out/aligned.apk
 echo "Built FreeMyTV.apk ($(du -h FreeMyTV.apk | cut -f1)). Install: adb install -r FreeMyTV.apk"

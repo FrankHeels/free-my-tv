@@ -13,6 +13,29 @@ final class Russian {
 
     static String text(String english) {
         switch (english) {
+            case "Season": return "Сезон";
+            case "Episode": return "Серия";
+
+            case "Continue watching": return "Продолжить просмотр";
+            case "Allow access to viewing history published by apps.": return "Разрешите доступ к истории, опубликованной приложениями.";
+            case "Allow access": return "Разрешить доступ";
+            case "Try again": return "Повторить";
+            case "Viewing history could not be read.": return "Не удалось прочитать историю просмотра.";
+            case "Loading viewing history…": return "Загрузка истории просмотра…";
+            case "Start watching in a compatible app": return "Начните просмотр в совместимом приложении";
+            case "This material could not be opened. Its link may be unavailable.": return "Не удалось открыть материал. Ссылка может быть недоступна.";
+            case "Open app": return "Открыть приложение";
+            case "App unavailable": return "Приложение недоступно";
+            case "Open settings": return "Открыть настройки";
+            case "Source apps": return "Приложения-источники";
+            case "Hidden materials": return "Скрытые материалы";
+            case "History access": return "Доступ к истории";
+            case "Access allowed": return "Доступ разрешён";
+            case "No hidden materials": return "Нет скрытых материалов";
+            case "Restore": return "Восстановить";
+            case "Restore all": return "Восстановить все";
+            case "Hold OK to hide": return "Удерживайте OK, чтобы скрыть";
+            case "Hide material": return "Скрыть материал";
             case "Live TV": return "Телеканалы";
             case "All Apps": return "Приложения";
             case "Settings": return "Настройки";

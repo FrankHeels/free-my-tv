@@ -1,0 +1,13 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="local.codex.continuetests">
+    <application android:label="Continuation tests" android:allowBackup="false" android:usesCleartextTraffic="false">
+        <provider android:name="io.freemytv.FixtureProvider" android:authorities="local.codex.continuetests.provider" android:exported="false" />
+        <activity android:name="io.freemytv.FixtureActivity" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="continuetest" />
+            </intent-filter>
+        </activity>
+    </application>
+    <instrumentation android:name="io.freemytv.ContinueAndroidTest" android:targetPackage="local.codex.continuetests" />
+</manifest>

@@ -6,6 +6,29 @@ final class German {
 
     static String text(String english) {
         switch (english) {
+            case "Season": return "Staffel";
+            case "Episode": return "Folge";
+
+            case "Continue watching": return "Weitersehen";
+            case "Allow access to viewing history published by apps.": return "Zugriff auf den von Apps veröffentlichten Verlauf erlauben.";
+            case "Allow access": return "Zugriff erlauben";
+            case "Try again": return "Erneut versuchen";
+            case "Viewing history could not be read.": return "Der Wiedergabeverlauf konnte nicht gelesen werden.";
+            case "Loading viewing history…": return "Wiedergabeverlauf wird geladen…";
+            case "Start watching in a compatible app": return "Wiedergabe in einer kompatiblen App starten";
+            case "This material could not be opened. Its link may be unavailable.": return "Dieser Inhalt konnte nicht geöffnet werden. Der Link ist möglicherweise nicht verfügbar.";
+            case "Open app": return "App öffnen";
+            case "App unavailable": return "App nicht verfügbar";
+            case "Open settings": return "Einstellungen öffnen";
+            case "Source apps": return "Quell-Apps";
+            case "Hidden materials": return "Ausgeblendete Inhalte";
+            case "History access": return "Zugriff auf den Verlauf";
+            case "Access allowed": return "Zugriff erlaubt";
+            case "No hidden materials": return "Keine ausgeblendeten Inhalte";
+            case "Restore": return "Wiederherstellen";
+            case "Restore all": return "Alle wiederherstellen";
+            case "Hold OK to hide": return "OK gedrückt halten zum Ausblenden";
+            case "Hide material": return "Inhalt ausblenden";
             case "Live TV": return "Live-TV";
             case "All Apps": return "Alle Apps";
             case "Settings": return "Einstellungen";
