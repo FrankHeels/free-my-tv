@@ -25,7 +25,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * Optional crypto prices (Binance, every 5 min) and weather/sunrise/sunset (Open-Meteo, every 30 min), cached
+ * Optional crypto prices (Binance, every 5 min) and weather (Open-Meteo with MET Norway fallback, every 30 min), cached
  * so the screen opens with numbers. Only fetched while the home screen or the screensaver is visible (the screen asks).
  * Neither source needs a key. Location and currency come from config.properties.
  */
@@ -35,16 +35,11 @@ final class HomeData {
     private static final String CURRENCY = Config.CURRENCY.trim().toUpperCase(Locale.ROOT);
     /** Binance quotes dollars as USDT. */
     private static final String QUOTE = CURRENCY.equals("USD") ? "USDT" : CURRENCY;
-    private static final String WEATHER_QUERY = "&current=temperature_2m,weather_code,is_day&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset"
-            + "&hourly=temperature_2m,weather_code,is_day&timezone=auto&forecast_days=2";
 
     private static String weatherPlace() {
         return Prefs.latitude() + "," + Prefs.longitude();
     }
 
-    private static String weatherUrl() {
-        return "https://api.open-meteo.com/v1/forecast?latitude=" + Prefs.latitude() + "&longitude=" + Prefs.longitude() + WEATHER_QUERY;
-    }
     private static final long PRICES_EVERY = 5 * 60_000L, WEATHER_EVERY = 30 * 60_000L;
     interface Listener { void onData(); }
 
@@ -92,6 +87,8 @@ final class HomeData {
         double temp = Double.NaN, max = Double.NaN, min = Double.NaN;
         int code = -1;
         boolean isDay = true;
+        String source = "Open-Meteo";
+        int rangeHours;
         long sunrise, sunset;   // today's, in epoch ms
         // Next hours (starting at the next full hour): time, temperature, code and day/night.
         final List<Long> hours = new ArrayList<>();
@@ -163,15 +160,18 @@ final class HomeData {
         }
         if (!fetchingWeather && (now - weatherAt > WEATHER_EVERY || now < weatherAt) && !failedRecently(weatherFailedAt, now)) {
             fetchingWeather = true;
+            String lat = Prefs.latitude(), lon = Prefs.longitude(), place = lat + "," + lon;
             io.execute(() -> {
                 try {
-                    String body = get(weatherUrl());
-                    weather = parseWeather(body);
+                    String body = WeatherLoader.load(cache, lat, lon, System.currentTimeMillis());
+                    Weather result = parseWeather(body);
+                    if (!place.equals(weatherPlace())) return;
+                    weather = result;
                     weatherAt = System.currentTimeMillis();
-                    cache.edit().putString("weather", body).putLong("weatherAt", weatherAt).putString("weatherPlace", weatherPlace()).apply();
+                    cache.edit().putString("weather", body).putLong("weatherAt", weatherAt).putString("weatherPlace", place).apply();
                     notifyListeners();
                 } catch (Exception e) {
-                    weatherFailedAt = System.currentTimeMillis();
+                    if (place.equals(weatherPlace())) weatherFailedAt = System.currentTimeMillis();
                     AppLog.w("weather: " + e.getMessage());
                 } finally {
                     fetchingWeather = false;
@@ -211,6 +211,8 @@ final class HomeData {
         JSONObject o = new JSONObject(body);
         TimeZone zone = TimeZone.getTimeZone(o.optString("timezone", TimeZone.getDefault().getID()));
         Weather w = new Weather();
+        w.source = o.optString("source", "Open-Meteo");
+        w.rangeHours = o.optInt("range_hours", 0);
         JSONObject current = o.getJSONObject("current");
         w.temp = current.getDouble("temperature_2m");
         w.code = current.getInt("weather_code");
@@ -218,8 +220,9 @@ final class HomeData {
         JSONObject daily = o.getJSONObject("daily");
         w.max = daily.getJSONArray("temperature_2m_max").getDouble(0);
         w.min = daily.getJSONArray("temperature_2m_min").getDouble(0);
-        w.sunrise = localTime(daily.getJSONArray("sunrise").getString(0), zone);
-        w.sunset = localTime(daily.getJSONArray("sunset").getString(0), zone);
+        String rise = daily.getJSONArray("sunrise").optString(0, ""), set = daily.getJSONArray("sunset").optString(0, "");
+        w.sunrise = rise.isEmpty() ? 0 : localTime(rise, zone);
+        w.sunset = set.isEmpty() ? 0 : localTime(set, zone);
         JSONObject hourly = o.optJSONObject("hourly");
         if (hourly != null) {
             JSONArray times = hourly.getJSONArray("time");

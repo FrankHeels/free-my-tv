@@ -38,6 +38,7 @@ final class German {
             case "Inputs": return "Eingänge";
             case "Shortcuts": return "Verknüpfungen";
             case "Weather": return "Wetter";
+            case "Next 24h: ": return "Nächste 24 Std.: ";
             case "No weather data right now.": return "Gerade keine Wetterdaten.";
             case "Sunrise ": return "Sonnenaufgang ";
             case "Sunset ": return "Sonnenuntergang ";

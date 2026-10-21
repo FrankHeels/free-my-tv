@@ -46,7 +46,16 @@ public class ContinueAndroidTest extends Instrumentation {
     @Override public void onStart() {
         Bundle out = new Bundle();
         try {
-            if ("persistence".equals(args.getString("phase"))) persistence(); else tests();
+            if ("weather".equals(args.getString("phase"))) {
+                checks += WeatherLoaderTest.run(getTargetContext());
+            } else if ("weather-live".equals(args.getString("phase"))) {
+                String body = WeatherLoader.load(getTargetContext().getSharedPreferences("weather-live", 0),
+                        "54.6750", "20.1347", System.currentTimeMillis());
+                org.json.JSONObject weather = new org.json.JSONObject(body);
+                check(!Double.isNaN(weather.getJSONObject("current").getDouble("temperature_2m")), "real forecast available");
+                out.putString("weatherSource", weather.optString("source", "Open-Meteo"));
+            } else if ("persistence".equals(args.getString("phase"))) persistence();
+            else tests();
             out.putString("stream", "PASS: " + checks + " Android checks (" + args.getString("phase", "main") + ")\n");
             finish(-1, out);
         } catch (Throwable e) {

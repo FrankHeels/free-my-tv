@@ -8,7 +8,7 @@ TEST_OUT=out/android-tests
 mkdir -p "$TEST_OUT/classes" "$TEST_OUT/gen"
 "$BT/aapt2" link -I "$AJ" --manifest tests/android/AndroidManifest.xml --min-sdk-version 28 --target-sdk-version 33 -o "$TEST_OUT/base.apk"
 "$JAVA_HOME/bin/javac" -source 8 -target 8 -encoding UTF-8 -bootclasspath "$AJ:$BT/core-lambda-stubs.jar" -d "$TEST_OUT/classes" \
-  app/src/io/freemytv/Continue{Model,Prefs,Watching,Images,Launch,Text}.java tests/android/src/io/freemytv/*.java
+  app/src/io/freemytv/Continue{Model,Prefs,Watching,Images,Launch,Text}.java app/src/io/freemytv/WeatherLoader.java tests/android/src/io/freemytv/*.java
 "$BT/d8" --release --min-api 28 --lib "$AJ" --output "$TEST_OUT" $(find "$TEST_OUT/classes" -name '*.class')
 (cd "$TEST_OUT" && zip -qj base.apk classes.dex)
 "$BT/zipalign" -f 4 "$TEST_OUT/base.apk" "$TEST_OUT/aligned.apk"

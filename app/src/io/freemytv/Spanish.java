@@ -38,6 +38,7 @@ final class Spanish {
             case "Inputs": return "Entradas";
             case "Shortcuts": return "Accesos directos";
             case "Weather": return "Clima";
+            case "Next 24h: ": return "Próximas 24 h: ";
             case "No weather data right now.": return "No hay datos del clima ahora.";
             case "Sunrise ": return "Amanecer ";
             case "Sunset ": return "Atardecer ";

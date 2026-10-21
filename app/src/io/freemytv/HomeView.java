@@ -272,7 +272,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
     private long textPricesAt = -1, textMinute = -1;
     private int textPrefs = -1;
     private String textLanguage;
-    private String weatherTitle, nowTemp, highLow, sunriseText, sunsetText, staleText;
+    private String weatherTitle, weatherSource, nowTemp, highLow, sunriseText, sunsetText, staleText;
     private final String[] hourText = new String[6], hourTempText = new String[6];
     private final String[] priceText = new String[HomeData.COINS.length], changeText = new String[HomeData.COINS.length];
 
@@ -1574,6 +1574,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         fill.setColor(tone(0x1A000000, 0x24FFFFFF));
         c.drawRoundRect(split - k, r.top + 34 * k, split + k, r.bottom - 34 * k, k, k, fill);
         float hx = split + 30 * k, hw = (r.right - 30 * k - hx) / 6;
+        c.drawText(weatherSource, hx, r.top + 54 * k, cardDim);
         for (int i = 0; i < wx.hours.size() && i < 6; i++) {
             float hc = hx + hw * (i + 0.5f);
             c.drawText(hourText[i], hc, r.top + 96 * k, hourPaint);
@@ -1593,11 +1594,14 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         if (wx != textWeather || settings) {
             textWeather = wx;
             weatherTitle = Prefs.city().isEmpty() ? Ui.tr("Clima", "Weather") : Prefs.city();
+            weatherSource = wx.source + " · CC BY 4.0";
             nowTemp = HomeData.degrees(wx.temp);
             highLow = Ui.ru ? "Макс. " + HomeData.degrees(wx.max) + "   Мин. " + HomeData.degrees(wx.min)
                     : Ui.en ? "H:" + HomeData.degrees(wx.max) + "   L:" + HomeData.degrees(wx.min)
                     : Ui.de ? "H:" + HomeData.degrees(wx.max) + "   T:" + HomeData.degrees(wx.min)
                     : "Máx. " + HomeData.degrees(wx.max) + "   Mín. " + HomeData.degrees(wx.min);
+            if (wx.rangeHours == 24) highLow = Ui.tr("Próximas 24 h: ", "Next 24h: ")
+                    + HomeData.degrees(wx.min) + " – " + HomeData.degrees(wx.max);
             for (int i = 0; i < wx.hours.size() && i < 6; i++) {
                 hourText[i] = HomeData.hour(wx.hours.get(i));
                 hourTempText[i] = HomeData.degrees(wx.hourTemp.get(i));
@@ -2565,6 +2569,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         StringBuilder s = new StringBuilder(Prefs.city().isEmpty() ? Ui.tr("Clima", "Weather") : Prefs.city());
         HomeData.Weather wx = data.weather;
         if (Double.isNaN(wx.temp)) return s.append(". ").append(Ui.tr("Sem dados do clima agora.", "No weather data right now.")).toString();
+        if (wx.rangeHours == 24) s.append(". ").append(Ui.tr("Próximas 24 h: ", "Next 24h: "));
         s.append(". ").append(HomeData.degrees(wx.temp)).append(", ").append(HomeData.condition(wx.code, wx.isDay))
                 .append(Ui.tr(". Máxima ", ". High ")).append(HomeData.degrees(wx.max))
                 .append(Ui.tr(", mínima ", ", low ")).append(HomeData.degrees(wx.min)).append('.');
@@ -2575,6 +2580,7 @@ final class HomeView extends ViewGroup implements Choreographer.FrameCallback, H
         }
         if (wx.sunrise != 0) s.append(Ui.tr(" Nascer do sol ", " Sunrise ")).append(Ui.time(wx.sunrise)).append('.');
         if (wx.sunset != 0) s.append(Ui.tr(" Pôr do sol ", " Sunset ")).append(Ui.time(wx.sunset)).append('.');
+        s.append(' ').append(wx.source).append(". CC BY 4.0.");
         return s.toString();
     }
 

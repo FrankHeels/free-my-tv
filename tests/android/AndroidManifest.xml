@@ -1,4 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="local.codex.continuetests">
+    <uses-permission android:name="android.permission.INTERNET" />
     <application android:label="Continuation tests" android:allowBackup="false" android:usesCleartextTraffic="false">
         <provider android:name="io.freemytv.FixtureProvider" android:authorities="local.codex.continuetests.provider" android:exported="false" />
         <activity android:name="io.freemytv.FixtureActivity" android:exported="true">

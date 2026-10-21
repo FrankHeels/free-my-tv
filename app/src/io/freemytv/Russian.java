@@ -45,6 +45,7 @@ final class Russian {
             case "Inputs": return "Входы";
             case "Shortcuts": return "Ярлыки";
             case "Weather": return "Погода";
+            case "Next 24h: ": return "Ближайшие 24 ч: ";
             case "No weather data right now.": return "Сейчас нет данных о погоде.";
             case "Sunrise ": return "Восход ";
             case "Sunset ": return "Закат ";
