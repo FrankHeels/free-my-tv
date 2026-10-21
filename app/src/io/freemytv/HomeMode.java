@@ -1,6 +1,12 @@
 package io.freemytv;
 
 import android.content.Context;
+import android.content.ComponentName;
+import android.content.Intent;
+import android.content.pm.ActivityInfo;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
+import android.provider.Settings;
 import android.os.Build;
 import android.os.SystemClock;
 
@@ -136,25 +142,36 @@ final class HomeMode {
     }
 
     /**
-     * The remote's app buttons (RemoteKeys) need an accessibility service that only filters those keys. It is on only
-     * on TCL and Vestel TVs in Free My TV mode, and goes off with Original. Android turns it off when this app is updated, so the
+     * The remote's app buttons (RemoteKeys) need an accessibility service that only filters those keys. It is on
+     * for TCL/Vestel app buttons or a temporary stock-home visit in Free mode, and goes off with Original. Android turns it off when this app is updated, so the
      * boot check and an update turn it back on.
      */
     static void ensureRemoteService(Context c, long delayMs) {
-        if (RemoteKeys.supported()) ModeJob.schedule(c, ModeJob.REMOTE, null, delayMs);
+        if (RemoteKeys.supported() || state(c).optBoolean("stockHomeReturn"))
+            ModeJob.schedule(c, ModeJob.REMOTE, null, delayMs);
     }
 
     static void ensureRemoteServiceNow(Context app) {
-        if (!RemoteKeys.supported() || !FREE.equals(state(app).optString("mode"))) return;
-        try (Adb adb = Adb.connect(app, 10_000, null)) {
-            remoteService(app, adb, true);
-        } catch (IOException e) {
-            AppLog.w("remote buttons service: " + e.getMessage());
+        synchronized (RUN) {
+            JSONObject s = state(app);
+            if ((!RemoteKeys.supported() && !s.optBoolean("stockHomeReturn"))
+                    || !FREE.equals(s.optString("mode")) || s.optBoolean("homeReverted")) return;
+            try (Adb adb = Adb.connect(app, 10_000, null)) {
+                remoteService(app, adb, true);
+            } catch (IOException e) {
+                AppLog.w("remote buttons service: " + e.getMessage());
+            }
         }
     }
 
     private static final String REMOTE_SERVICE = PKG + "/" + PKG + ".RemoteKeyService";
     private static final Pattern SERVICE = Pattern.compile("[\\w.]+/[\\w.$]+");
+
+    private static boolean remoteServiceEnabled(Context c) {
+        String enabled = Settings.Secure.getString(c.getContentResolver(), "enabled_accessibility_services");
+        return enabled != null && Arrays.asList(enabled.split(":")).contains(REMOTE_SERVICE)
+                && Settings.Secure.getInt(c.getContentResolver(), "accessibility_enabled", 0) == 1;
+    }
 
     /** Adds ours to the enabled accessibility services (keeping the others, like TalkBack), or takes it out. */
     private static void remoteService(Context c, Adb adb, boolean on) throws IOException {
@@ -192,6 +209,108 @@ final class HomeMode {
         synchronized (RUN) {
             if (FREE.equals(mode)) applyFree(c); else applyOriginal(c);
         }
+    }
+
+    /** Called by the foreground shortcut in this process. Enables only the recorded stock home and its dependency;
+     * neither the HOME role, the selected mode nor the screensaver is changed. */
+    static Intent prepareStockHome(Context c, String visitId) throws Exception {
+        synchronized (RUN) {
+            JSONObject s = state(c);
+            PackageManager pm = c.getPackageManager();
+            ComponentName home = StockHome.resolve(pm, originalHome(s));
+            if (home == null) throw new IOException("factory HOME activity not found");
+            String component = safeComponent(home.flattenToString());
+            if (component.isEmpty()) throw new IOException("invalid factory HOME component");
+            ActivityInfo info = pm.getActivityInfo(home, PackageManager.MATCH_DISABLED_COMPONENTS);
+            if (pm.getComponentEnabledSetting(home) >= PackageManager.COMPONENT_ENABLED_STATE_DISABLED)
+                throw new IOException("factory HOME activity is disabled separately");
+            Set<String> kept = StockHome.keptPackages(component);
+            Set<String> disabled = new HashSet<>(stringList(s, "disabled"));
+            Set<String> enable = new HashSet<>();
+            if (!info.applicationInfo.enabled) enable.add(home.getPackageName());
+            for (String pkg : kept) if (disabled.contains(pkg)) enable.add(pkg);
+            boolean freeMode = FREE.equals(s.optString("mode")) && !s.optBoolean("homeReverted");
+            if (!enable.isEmpty() || (freeMode && !resolvesToFree(pm)
+                    && !(s.optBoolean("stockHomeReturn") && remoteServiceEnabled(c)))) {
+                try (Adb adb = Adb.connect(c, 10_000, null)) {
+                    boolean freeHeld = PKG.equals(homeHolder(adb));
+                    Set<String> present = packages(adb, "");
+                    if (freeHeld && freeMode) {
+                        if (originalHome(s).isEmpty()) s.put("originalHome", component);
+                        Set<String> restore = new HashSet<>(stringList(s, "stockHomeVisit"));
+                        for (String pkg : enable) if (present.contains(pkg)) restore.add(pkg);
+                        s.put("stockHomeVisit", new JSONArray(sorted(restore)))
+                                .put("stockHomeVisitId", visitId);
+                        save(c, s);
+                    }
+                    for (String pkg : enable) if (present.contains(pkg))
+                        check(adb.shell("pm enable --user 0 '" + pkg + "'"), "new state: enabled", "could not enable stock home");
+                    // Xiaomi's system HOME has priority 2 and wins resolution even with our HOME role. Keep that
+                    // existing role and use the remote service for Home, only while Free mode remains selected.
+                    if (freeHeld && freeMode && !resolvesToFree(pm)) {
+                        JSONObject latest = state(c);
+                        latest.put("stockHomeReturn", true);
+                        save(c, latest);
+                        remoteService(c, adb, true);
+                        if (!remoteServiceEnabled(c)) throw new IOException("Home return service not enabled");
+                    }
+                }
+            }
+            s = state(c);
+            if (originalHome(s).isEmpty()) s.put("originalHome", component);
+            save(c, s);
+            return StockHome.launch(home);
+        }
+    }
+
+    private static boolean resolvesToFree(PackageManager pm) {
+        ResolveInfo home = pm.resolveActivity(StockHome.homeQuery(), PackageManager.MATCH_DEFAULT_ONLY);
+        return home != null && home.activityInfo != null && PKG.equals(home.activityInfo.packageName);
+    }
+
+    /** Returning with Home or Back ends the temporary visit. The token prevents an old job closing a newer visit. */
+    static void returnFromStockHome(Context c) {
+        JSONObject s = state(c);
+        if (s.has("stockHomeVisit"))
+            ModeJob.schedule(c, ModeJob.STOCK_RETURN, s.optString("stockHomeVisitId"), 0);
+    }
+
+    static void finishStockHomeVisit(Context c, String token) {
+        synchronized (RUN) {
+            JSONObject s = state(c);
+            if (!StockHome.isCurrentVisit(s, token)) return;
+            try (Adb adb = Adb.connect(c, 10_000, null)) {
+                List<String> failed = new ArrayList<>();
+                Set<String> disabled = new HashSet<>(stringList(s, "disabled"));
+                if (FREE.equals(s.optString("mode")) && !s.optBoolean("homeReverted") && PKG.equals(homeHolder(adb))) {
+                    Set<String> allowed = StockHome.keptPackages(originalHome(s));
+                    Set<String> owners = wifiOwners(adb);
+                    for (String pkg : stringList(s, "stockHomeVisit")) {
+                        if (!allowed.contains(pkg) || PROTECTED.contains(pkg)) continue;
+                        if (owners.contains(pkg)) { failed.add(pkg); continue; }
+                        if (adb.shell("pm disable-user --user 0 '" + pkg + "'").contains("disabled-user")) disabled.add(pkg);
+                        else failed.add(pkg);
+                    }
+                }
+                s = state(c);
+                s.put("disabled", new JSONArray(sorted(disabled)));
+                if (failed.isEmpty()) {
+                    clearStockVisit(s);
+                    if (!RemoteKeys.supported()) remoteService(c, adb, false);
+                } else s.put("stockHomeVisit", new JSONArray(failed));
+                save(c, s);
+            } catch (Exception e) {
+                // Keep the pending list and Home interception: the next resume or boot verification retries.
+                AppLog.w("stock home return: " + e);
+            }
+        }
+    }
+
+    private static void clearStockVisit(JSONObject s) {
+        s.remove("stockHomeVisit");
+        s.remove("stockHomeVisitId");
+        s.remove("stockHomeReturn");
+        s.remove("stockHomeShortcut");
     }
 
     private static void applyFree(Context c) {
@@ -258,15 +377,14 @@ final class HomeMode {
                 }
             }
             s = state(c);
+            clearStockVisit(s);
             s.put("mode", FREE).put("since", System.currentTimeMillis()).put("homeReverted", false)
                     .put("disabled", new JSONArray(sorted(disabled))).put("setupHome", setupHome);
             save(c, s);
-            if (RemoteKeys.supported()) {
-                try {
-                    remoteService(c, adb, true);
-                } catch (IOException e) {
-                    AppLog.w("remote buttons service: " + e.getMessage());
-                }
+            try {
+                remoteService(c, adb, RemoteKeys.supported());
+            } catch (IOException e) {
+                AppLog.w("remote buttons service: " + e.getMessage());
             }
             notice(c, Ui.tr("Free My TV ligado: Início e tela de descanso novos, " + disabled.size() + " apps desligados.",
                     "Free My TV is on: new home screen and screensaver, " + disabled.size() + " apps turned off."));
@@ -309,6 +427,7 @@ final class HomeMode {
                 AppLog.w("remote buttons service: " + e.getMessage());
             }
             s = state(c);
+            clearStockVisit(s);
             s.put("mode", ORIGINAL).put("since", System.currentTimeMillis()).put("homeReverted", false)
                     .put("disabled", new JSONArray(failed));
             save(c, s);
@@ -350,6 +469,7 @@ final class HomeMode {
                 boolean ours = homeHolder(adb).contains(PKG);
                 if (!ours && (!FREE.equals(s.optString("mode")) || s.optBoolean("homeReverted"))) return;
                 String home = originalHome(s);
+                if (s.optBoolean("stockHomeReturn")) remoteService(app, adb, false);
                 adb.shell("pm enable " + GOOGLE_SETUP);
                 if (!restoreHome(adb, home)) {
                     AppLog.w("could not give the home screen back");
@@ -413,6 +533,7 @@ final class HomeMode {
                     }
                     if (adb.shell("pm disable-user --user 0 " + pkg).contains("disabled-user")) {
                         disabled.add(pkg);
+                        disabledNow.add(pkg);
                         fixed.add(pkg);
                     }
                 }
@@ -427,6 +548,11 @@ final class HomeMode {
                 }
                 JSONObject latest = state(app);
                 latest.put("disabled", new JSONArray(sorted(disabled)));
+                latest.remove("stockHomeShortcut");
+                if (disabledNow.contains(packageOf(home))) {
+                    clearStockVisit(latest);
+                    if (!RemoteKeys.supported()) remoteService(app, adb, false);
+                }
                 save(app, latest);
             } catch (Exception e) {
                 notice(app, Ui.tr("Não consegui conferir o Free My TV: ", "Couldn't check Free My TV: ") + (Ui.ru ? Russian.text(e.getMessage() == null ? "" : e.getMessage()) : e.getMessage()));

@@ -13,6 +13,10 @@ final class Russian {
 
     static String text(String english) {
         switch (english) {
+            case "Stock home": return "Стоковый экран";
+            case "Opening stock home…": return "Открываем стоковый экран…";
+            case "Could not open stock home. If it is disabled, keep USB debugging enabled and authorized for Free My TV.": return "Не удалось открыть стоковый экран. Если он отключён, включите отладку USB и разрешите её для Free My TV.";
+
             case "Season": return "Сезон";
             case "Episode": return "Серия";
 

@@ -4,7 +4,7 @@ Fork: https://github.com/FrankHeels/free-my-tv
 Upstream: https://github.com/simbasjungles/free-my-tv
 Branch: `feature/continue-watching`. Based on upstream `62e883b3179c8cafb7a2b09960eabfe7eea6ef1c`.
 
-This Android-only change replaces recommendation tabs/cards with a four-card, horizontally navigable Watch Next row. The app shelf, background, screensaver, Original mode and watchdog retain their existing implementations. The weather widget remains; version 1.3 adds a [forecast fallback](weather.md) for networks where Open-Meteo cannot be reached. The row works without a TMDB key. Recs still supplies background/screensaver art when configured. No private cinema APIs, Gradle or libraries are added.
+This Android-only change replaces recommendation tabs/cards with a four-card, horizontally navigable Watch Next row. The app shelf, background and screensaver retain their existing implementations. Original mode and watchdog restoration remain available; version 1.4 adds a [temporary stock-home shortcut](stock-home.md) and its Home-button cleanup. The weather widget remains; version 1.3 adds a [forecast fallback](weather.md) for networks where Open-Meteo cannot be reached. The row works without a TMDB key. Recs still supplies background/screensaver art when configured. No private cinema APIs, Gradle or libraries are added.
 
 ## Data and identity
 

@@ -6,13 +6,24 @@ Target: Xiaomi MiTV-AXFU1, Android TV 14 (API 34). Android customization only.
 
 - Plain Java suite: **29 checks passed**, JDK 17.
 - Isolated Android instrumentation APK on the Xiaomi: **56 checks passed**, then **2 persistence checks passed after force-stop**. This includes 18 checks for the Kinopoisk playback URI rule. The tests used their own in-memory provider and preferences, never system Watch Next writes or real cinema launches. The runner removed the test package afterward.
-- `build.sh` completed; APK signature and manifest verified. Current package `io.freemytv`, versionCode 4, versionName `1.3-continue`, min API 28 / target 33, compile API 34. No TMDB key configured.
+- `build.sh` completed; APK signature and manifest verified. Current package `io.freemytv`, versionCode 5, versionName `1.4-continue`, min API 28 / target 33, compile API 34. No TMDB key configured.
 - Installed and updated over the previous build with the same permanent signing key. History permission remained granted after update.
 - System permission explanation/dialog displayed on TV. Actual history showed **8 entries: 5 Ivi, 3 Kinopoisk**, with four landscape cards visible, artwork, progress and additional cards reachable horizontally.
 - Light-theme screen inspected. Selected card survived a return from Ivi. Long OK opened the hide menu; hiding reduced the row from 8 to 7 entries with nearest-card focus. The individual restore action restored the material; the hidden list was then empty. Source settings correctly listed Ivi and Kinopoisk, both enabled.
 - User confirmed that Ivi opened the correct material and resumed from the saved position (Ivi 26.10.2 from the preceding diagnostic).
 - Temporary diagnostic and isolated test APKs were removed from the TV after the checks.
-- No changes to HomeMode, Watchdog, Recs, screensaver implementations, LG or Tizen code. The original Google TV home remained the default during preview.
+- Recs, screensaver implementations, LG and Tizen remain unchanged. The user subsequently selected Free My TV as default; the HOME role and native resolver were verified on the TV. HomeMode now handles temporary stock-home visits and cleanup; see below.
+
+## Stock home follow-up (1.4)
+
+- Top-row home icon and Russian label inspected on the dark theme. Activating the real visible shortcut enabled the previously disabled `com.google.android.tvlauncher` and its companion recommendations service, then opened the stock MainActivity.
+- The user twice confirmed that physical Home returned to Free My TV, including the final temporary-visit implementation. Injected `adb input` Home events bypassed the accessibility filter and were not used as evidence for physical remote behavior.
+- After return, native HOME resolution again selected `io.freemytv/.HomeActivity`; its HOME role was unchanged. The two temporarily enabled packages were disabled again, the temporary accessibility service was removed, accessibility returned to its previous off state, and the Free My TV screensaver component was unchanged.
+- Automated cleanup acceptance passed using an explicit activity return. The opt-in physical-remote harness was adjusted to await both native resolution and service cleanup, which complete sequentially in the background job.
+- **24 stock-home regression checks**, plus **29 Java / 56 Android continuation / 2 persistence / 15 weather checks**. The new checks cover original/ambiguous/missing/disabled/system fallback HOME candidates, regular-task launch, temporary package scope, Original/watchdog/role guards, and stale cancellation tokens.
+- Boot/update recovery is implemented through the existing verification job; reboot and crash-triggered recovery were not deliberately exercised. During a stock visit, holding Home is consumed by the temporary handler. Local ADB authorization must remain available to enable/restore stock packages.
+
+See [stock-home.md](stock-home.md) for the Xiaomi priority issue and lifecycle details.
 
 ## Weather follow-up
 
@@ -28,7 +39,7 @@ The installed app's handler explicitly supports `action=play` on that same route
 
 - Fresh playback progress after returning from the real cinema apps: the provider supports reads and observer updates, but the latest diagnostic snapshot had not yet changed its recorded positions. No freshness guarantee is inferred.
 - Real-TV source-exclusion toggling, restore-all UI, dark theme and enabled TalkBack (filtering/restore-all persistence are covered by code and isolated tests).
-- Final switch to Free My TV, return through Original, and watchdog recovery. Their implementations are preserved, but unchanged code is not evidence of a completed live recovery test.
+- Return through Original and actual watchdog recovery. Free My TV is now the selected home, but restoration code and guard tests are not evidence of a completed live recovery test.
 - TMDB-configured background/screensaver behavior; this build intentionally has no API key. Weather city defaults are now Svetly, Kaliningrad Oblast; TV selections still take precedence.
 - Zona playback/Watch Next behavior is explicitly outside acceptance.
 

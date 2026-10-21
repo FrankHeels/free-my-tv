@@ -46,7 +46,9 @@ public class ContinueAndroidTest extends Instrumentation {
     @Override public void onStart() {
         Bundle out = new Bundle();
         try {
-            if ("weather".equals(args.getString("phase"))) {
+            if ("stock-home".equals(args.getString("phase"))) {
+                checks += StockHomeTest.run();
+            } else if ("weather".equals(args.getString("phase"))) {
                 checks += WeatherLoaderTest.run(getTargetContext());
             } else if ("weather-live".equals(args.getString("phase"))) {
                 String body = WeatherLoader.load(getTargetContext().getSharedPreferences("weather-live", 0),

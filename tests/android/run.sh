@@ -7,7 +7,7 @@ ADB="${ADB:-adb}"
 "$ADB" -s "$ANDROID_SERIAL" uninstall local.codex.continuetests >/dev/null 2>&1 || true
 "$ADB" -s "$ANDROID_SERIAL" install --no-incremental -r out/android-tests/tests.apk
 trap '"$ADB" -s "$ANDROID_SERIAL" uninstall local.codex.continuetests >/dev/null' EXIT
-for phase in main persistence weather; do
+for phase in main persistence weather stock-home; do
   "$ADB" -s "$ANDROID_SERIAL" shell am force-stop local.codex.continuetests
   result="$("$ADB" -s "$ANDROID_SERIAL" shell am instrument -w -e phase "$phase" local.codex.continuetests/io.freemytv.ContinueAndroidTest)"
   printf '%s\n' "$result"

@@ -6,6 +6,10 @@ final class German {
 
     static String text(String english) {
         switch (english) {
+            case "Stock home": return "Original-Startseite";
+            case "Opening stock home…": return "Original-Startseite wird geöffnet…";
+            case "Could not open stock home. If it is disabled, keep USB debugging enabled and authorized for Free My TV.": return "Die Original-Startseite konnte nicht geöffnet werden. Falls sie deaktiviert ist, lasse USB-Debugging eingeschaltet und für Free My TV autorisiert.";
+
             case "Season": return "Staffel";
             case "Episode": return "Folge";
 
